@@ -51,7 +51,7 @@ Create a `.env` file in the root directory:
 ```env
 PRIVATE_KEY=your_wallet_private_key_here
 BSCSCAN_API_KEY=your_bscscan_api_key_here
-VITE_CONTRACT_ADDRESS_TESTNET=
+VITE_CONTRACT_ADDRESS_TESTNET=0x0213761aCBb1366640Fe7CCAbB61a79f58c0D2d5
 VITE_CONTRACT_ADDRESS_MAINNET=
 ```
 
@@ -287,5 +287,6 @@ For questions or support, please open an issue in the GitHub repository.
 ---
 
 Built with ❤️ for the BNB Chain ecosystem
+
 
 
