@@ -1,7 +1,8 @@
 # BNB Chain Auto-Mass Payouts
 
 *Youtube video link: https://youtu.be/KjxE98f1FB8?si=YGA8a4rSsYGhviaG*
-*live website link: *
+
+*Live website link: https://auto-mass-bnb-payout.vercel.app/* **note: live website only available for testnet**
 
 🚀 **A production-ready application for distributing tokens to hundreds of wallets in a single transaction on BNB Chain.**
 
@@ -286,4 +287,5 @@ For questions or support, please open an issue in the GitHub repository.
 ---
 
 Built with ❤️ for the BNB Chain ecosystem
+
 
