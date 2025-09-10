@@ -3,7 +3,25 @@ import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { truncateAddress } from "../utils/helpers";
 
-const WalletConnect = ({ isConnected, wallet, onConnect, onDisconnect }) => {
+// Type definitions
+interface Wallet {
+  chainId: number;
+  address: string;
+}
+
+interface WalletConnectProps {
+  isConnected: boolean;
+  wallet: Wallet | null;
+  onConnect: () => void;
+  onDisconnect: () => void;
+}
+
+const WalletConnect: React.FC<WalletConnectProps> = ({ 
+  isConnected, 
+  wallet, 
+  onConnect, 
+  onDisconnect 
+}) => {
   if (!isConnected) {
     return (
       <div className="flex flex-col items-center space-y-3">
@@ -17,7 +35,7 @@ const WalletConnect = ({ isConnected, wallet, onConnect, onDisconnect }) => {
     );
   }
 
-  const networkName =
+  const networkName: string =
     wallet?.chainId === 97
       ? "BSC Testnet"
       : wallet?.chainId === 56
