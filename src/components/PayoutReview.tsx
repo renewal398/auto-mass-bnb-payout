@@ -13,19 +13,61 @@ import { formatTokenAmount, validateAmount } from "../utils/validation";
 import { truncateAddress } from "../utils/helpers";
 import contractService from "../services/contractService"; // Use our new contract service
 
-const PayoutReview = ({
+// Type definitions
+interface RecipientData {
+  address: string;
+  amount: string;
+  originalAmount: string;
+}
+
+interface Token {
+  address: string;
+  symbol: string;
+  decimals?: number;
+  name?: string;
+}
+
+interface Wallet {
+  address: string;
+  signer: ethers.Signer;
+  provider: ethers.providers.Web3Provider;
+}
+
+interface PayoutData {
+  recipient: string;
+  amount: ethers.BigNumber;
+}
+
+interface TransactionData {
+  recipients: RecipientData[];
+  selectedToken: Token;
+  gasEstimate: string | null;
+  serviceFee: string;
+  totalCost: string;
+  needsApproval: boolean;
+}
+
+interface PayoutReviewProps {
+  recipients: RecipientData[];
+  selectedToken: Token;
+  wallet: Wallet;
+  onExecute: (data: TransactionData) => void;
+  onBack: () => void;
+}
+
+const PayoutReview: React.FC<PayoutReviewProps> = ({
   recipients,
   selectedToken,
   wallet,
   onExecute,
   onBack,
 }) => {
-  const [gasEstimate, setGasEstimate] = useState(null);
-  const [serviceFee, setServiceFee] = useState("0");
-  const [totalCost, setTotalCost] = useState("0");
-  const [isLoading, setIsLoading] = useState(false);
-  const [needsApproval, setNeedsApproval] = useState(false);
-  const [isApproving, setIsApproving] = useState(false);
+  const [gasEstimate, setGasEstimate] = useState<string | null>(null);
+  const [serviceFee, setServiceFee] = useState<string>("0");
+  const [totalCost, setTotalCost] = useState<string>("0");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [needsApproval, setNeedsApproval] = useState<boolean>(false);
+  const [isApproving, setIsApproving] = useState<boolean>(false);
 
   useEffect(() => {
     if (wallet && selectedToken && recipients.length > 0) {
@@ -34,7 +76,7 @@ const PayoutReview = ({
     }
   }, [wallet, selectedToken, recipients]);
 
-  const calculateCosts = async () => {
+  const calculateCosts = async (): Promise<void> => {
     console.log("🔄 Starting cost calculation...");
     setIsLoading(true);
 
@@ -44,7 +86,7 @@ const PayoutReview = ({
         wallet.provider?.provider || window.ethereum
       );
 
-      const payoutData = recipients.map((recipient) => ({
+      const payoutData: PayoutData[] = recipients.map((recipient) => ({
         recipient: recipient.address,
         amount: ethers.utils.parseUnits(
           recipient.amount.toString(),
@@ -68,7 +110,7 @@ const PayoutReview = ({
       console.log("📊 Recipient total:", recipientTotal, selectedToken.symbol);
 
       // Estimate gas
-      let gasEstimate;
+      let gasEstimate: ethers.BigNumber;
       try {
         if (selectedToken.address === "native") {
           // For BNB payouts
@@ -113,10 +155,11 @@ const PayoutReview = ({
             parseFloat(serviceFeeFormatted) + parseFloat(gasCostFormatted);
           setTotalCost(totalCostValue.toString());
         }
-      } catch (gasError) {
+      } catch (gasError: unknown) {
+        const errorMessage = gasError instanceof Error ? gasError.message : 'Unknown error';
         console.warn(
           "⚠️ Gas estimation failed, using fallback:",
-          gasError.message
+          errorMessage
         );
 
         // Fallback gas estimate
@@ -141,7 +184,7 @@ const PayoutReview = ({
       }
 
       console.log("✅ Cost calculation completed");
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("❌ Failed to calculate costs:", error);
 
       // Fallback values
@@ -163,7 +206,7 @@ const PayoutReview = ({
     }
   };
 
-  const checkApprovalNeeded = async () => {
+  const checkApprovalNeeded = async (): Promise<void> => {
     if (selectedToken.address === "native" || !wallet) {
       setNeedsApproval(false);
       return;
@@ -188,20 +231,20 @@ const PayoutReview = ({
       }, ethers.BigNumber.from(0));
 
       // Get contract address
-      const contractAddress = import.meta.env.VITE_CONTRACT_ADDRESS_TESTNET;
+      const contractAddress = import.meta.env.VITE_CONTRACT_ADDRESS_TESTNET as string;
       const allowance = await tokenContract.allowance(
         wallet.address,
         contractAddress
       );
 
       setNeedsApproval(allowance.lt(totalAmount));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Failed to check approval:", error);
       setNeedsApproval(true);
     }
   };
 
-  const handleApprove = async () => {
+  const handleApprove = async (): Promise<void> => {
     if (!wallet) return;
 
     setIsApproving(true);
@@ -216,12 +259,12 @@ const PayoutReview = ({
       );
 
       const balance = await tokenContract.balanceOf(wallet.address);
-      const contractAddress = import.meta.env.VITE_CONTRACT_ADDRESS_TESTNET;
+      const contractAddress = import.meta.env.VITE_CONTRACT_ADDRESS_TESTNET as string;
       const tx = await tokenContract.approve(contractAddress, balance);
       await tx.wait();
 
       setNeedsApproval(false);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Approval failed:", error);
       alert("Failed to approve token spending");
     } finally {
@@ -229,8 +272,8 @@ const PayoutReview = ({
     }
   };
 
-  const handleExecute = () => {
-    const transactionData = {
+  const handleExecute = (): void => {
+    const transactionData: TransactionData = {
       recipients,
       selectedToken,
       gasEstimate,
@@ -361,7 +404,7 @@ const PayoutReview = ({
                   {recipients.length > 10 && (
                     <tr>
                       <td
-                        colSpan="2"
+                        colSpan={2}
                         className="px-3 py-2 text-sm text-center text-gray-500"
                       >
                         ... and {recipients.length - 10} more recipients
