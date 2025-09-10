@@ -1,8 +1,8 @@
-const { run } = require("hardhat");
+import { run } from "hardhat";
 
-async function main() {
-  const contractAddress = process.env.CONTRACT_ADDRESS;
-  const feeCollector = process.env.FEE_COLLECTOR;
+async function main(): Promise<void> {
+  const contractAddress: string | undefined = process.env.CONTRACT_ADDRESS;
+  const feeCollector: string | undefined = process.env.FEE_COLLECTOR;
 
   if (!contractAddress) {
     console.error("❌ Please set CONTRACT_ADDRESS in your environment");
@@ -24,14 +24,14 @@ async function main() {
       constructorArguments: [feeCollector],
     });
     console.log("✅ Contract verified successfully!");
-  } catch (error) {
+  } catch (error: any) {
     console.error("❌ Verification failed:", error);
   }
 }
 
 main()
   .then(() => process.exit(0))
-  .catch((error) => {
+  .catch((error: Error) => {
     console.error(error);
     process.exit(1);
   });
