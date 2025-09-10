@@ -2,10 +2,16 @@ import React from "react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 
-const ErrorDisplay = ({ error, onRetry, onRefresh }) => {
+interface ErrorDisplayProps {
+  error: string | null;
+  onRetry?: () => void;
+  onRefresh?: () => void;
+}
+
+const ErrorDisplay: React.FC<ErrorDisplayProps> = ({ error, onRetry, onRefresh }) => {
   if (!error) return null;
 
-  const isMetaMaskError =
+  const isMetaMaskError: boolean =
     error.includes("MetaMask") || error.includes("disconnected");
 
   return (
