@@ -13,19 +13,48 @@ import { Select } from "./ui/select";
 import { COMMON_TOKENS } from "../utils/constants";
 import { formatTokenAmount } from "../utils/validation";
 
-const TokenSelector = ({ recipients, onSelect, wallet }) => {
-  const [selectedToken, setSelectedToken] = useState(null);
-  const [customToken, setCustomToken] = useState("");
-  const [tokenBalance, setTokenBalance] = useState(null);
-  const [totalAmount, setTotalAmount] = useState("0");
-  const [isLoading, setIsLoading] = useState(false);
+// Type definitions
+interface Token {
+  address: string;
+  symbol: string;
+  name: string;
+  decimals: number;
+  logo: string;
+  isNative: boolean;
+  description?: string;
+}
 
-  const availableTokens = COMMON_TOKENS[wallet?.chainId] || [];
+interface Recipient {
+  address: string;
+  amount: string;
+}
+
+interface Wallet {
+  chainId: number;
+  address: string;
+  signer: ethers.Signer;
+  provider: ethers.providers.Provider;
+}
+
+interface TokenSelectorProps {
+  recipients: Recipient[];
+  onSelect: (token: Token) => void;
+  wallet: Wallet | null;
+}
+
+const TokenSelector: React.FC<TokenSelectorProps> = ({ recipients, onSelect, wallet }) => {
+  const [selectedToken, setSelectedToken] = useState<Token | null>(null);
+  const [customToken, setCustomToken] = useState<string>("");
+  const [tokenBalance, setTokenBalance] = useState<string | null>(null);
+  const [totalAmount, setTotalAmount] = useState<string>("0");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const availableTokens: Token[] = COMMON_TOKENS[wallet?.chainId as keyof typeof COMMON_TOKENS] || [];
 
   useEffect(() => {
     if (recipients.length > 0) {
-      const total = recipients.reduce((sum, recipient) => {
-        return sum + parseFloat(recipient.amount || 0);
+      const total = recipients.reduce((sum: number, recipient: Recipient) => {
+        return sum + parseFloat(recipient.amount || "0");
       }, 0);
       setTotalAmount(total.toString());
     }
@@ -37,8 +66,8 @@ const TokenSelector = ({ recipients, onSelect, wallet }) => {
     }
   }, [selectedToken, wallet]);
 
-  const fetchTokenBalance = async () => {
-    if (!selectedToken || !wallet.signer) return;
+  const fetchTokenBalance = async (): Promise<void> => {
+    if (!selectedToken || !wallet?.signer) return;
 
     setIsLoading(true);
     try {
@@ -69,13 +98,18 @@ const TokenSelector = ({ recipients, onSelect, wallet }) => {
     }
   };
 
-  const handleTokenSelect = (token) => {
+  const handleTokenSelect = (token: Token): void => {
     setSelectedToken(token);
   };
 
-  const handleCustomTokenAdd = async () => {
+  const handleCustomTokenAdd = async (): Promise<void> => {
     if (!ethers.utils.isAddress(customToken)) {
       alert("Invalid token address");
+      return;
+    }
+
+    if (!wallet?.provider) {
+      alert("Wallet not connected");
       return;
     }
 
@@ -90,13 +124,13 @@ const TokenSelector = ({ recipients, onSelect, wallet }) => {
         wallet.provider
       );
 
-      const [symbol, name, decimals] = await Promise.all([
+      const [symbol, name, decimals]: [string, string, number] = await Promise.all([
         tokenContract.symbol(),
         tokenContract.name(),
         tokenContract.decimals(),
       ]);
 
-      const token = {
+      const token: Token = {
         address: customToken,
         symbol,
         name,
@@ -114,15 +148,15 @@ const TokenSelector = ({ recipients, onSelect, wallet }) => {
     }
   };
 
-  const handleProceed = () => {
+  const handleProceed = (): void => {
     if (selectedToken) {
       onSelect(selectedToken);
     }
   };
 
-  const isBalanceSufficient =
-    tokenBalance && parseFloat(tokenBalance) >= parseFloat(totalAmount);
-  const currentNetwork = wallet?.chainId === 97 ? "BSC Testnet" : "BSC Mainnet";
+  const isBalanceSufficient: boolean =
+    tokenBalance !== null && parseFloat(tokenBalance) >= parseFloat(totalAmount);
+  const currentNetwork: string = wallet?.chainId === 97 ? "BSC Testnet" : "BSC Mainnet";
 
   return (
     <div className="space-y-6">
@@ -151,7 +185,7 @@ const TokenSelector = ({ recipients, onSelect, wallet }) => {
               Available Tokens on {currentNetwork}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {availableTokens.map((token) => (
+              {availableTokens.map((token: Token) => (
                 <button
                   key={token.symbol}
                   onClick={() => handleTokenSelect(token)}
@@ -194,7 +228,7 @@ const TokenSelector = ({ recipients, onSelect, wallet }) => {
               <Input
                 placeholder="Enter token contract address (0x...)"
                 value={customToken}
-                onChange={(e) => setCustomToken(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomToken(e.target.value)}
                 className="flex-1"
               />
               <Button
@@ -249,7 +283,7 @@ const TokenSelector = ({ recipients, onSelect, wallet }) => {
                         <span>Loading...</span>
                       </div>
                     ) : (
-                      `${parseFloat(tokenBalance || 0).toFixed(6)} ${
+                      `${parseFloat(tokenBalance || "0").toFixed(6)} ${
                         selectedToken.symbol
                       }`
                     )}
