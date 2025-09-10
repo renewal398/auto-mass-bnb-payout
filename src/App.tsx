@@ -10,46 +10,78 @@ import { Card } from "./components/ui/card";
 import { useWallet } from "./hooks/useWallet";
 import { useToast } from "./hooks/useToast";
 
+// Types
+interface Recipient {
+  address: string;
+  amount: string;
+}
+
+interface TokenInfo {
+  address: string;
+  symbol: string;
+  decimals: number;
+  name: string;
+}
+
+interface TransactionData {
+  hash: string;
+  gasUsed?: string;
+  gasPrice?: string;
+  blockNumber?: number;
+  timestamp?: number;
+}
+
+interface PayoutResult {
+  recipient: string;
+  amount: string;
+  status: 'success' | 'failed';
+  transactionHash?: string;
+  error?: string;
+}
+
+// Constants
 const STEPS = {
   UPLOAD: "upload",
   TOKEN: "token",
   REVIEW: "review",
   EXECUTE: "execute",
   COMPLETE: "complete",
-};
+} as const;
 
-function App() {
-  const [currentStep, setCurrentStep] = useState(STEPS.UPLOAD);
-  const [recipients, setRecipients] = useState([]);
-  const [selectedToken, setSelectedToken] = useState(null);
-  const [transactionData, setTransactionData] = useState(null);
-  const [payoutResults, setPayoutResults] = useState([]);
+type StepType = typeof STEPS[keyof typeof STEPS];
+
+function App(): JSX.Element {
+  const [currentStep, setCurrentStep] = useState<StepType>(STEPS.UPLOAD);
+  const [recipients, setRecipients] = useState<Recipient[]>([]);
+  const [selectedToken, setSelectedToken] = useState<TokenInfo | null>(null);
+  const [transactionData, setTransactionData] = useState<TransactionData | null>(null);
+  const [payoutResults, setPayoutResults] = useState<PayoutResult[]>([]);
 
   const { wallet, isConnected, connect, disconnect } = useWallet();
   const { showToast } = useToast();
 
-  const handleFileUpload = (data) => {
+  const handleFileUpload = (data: Recipient[]): void => {
     setRecipients(data);
     setCurrentStep(STEPS.TOKEN);
     showToast("Recipients loaded successfully", "success");
   };
 
-  const handleTokenSelect = (token) => {
+  const handleTokenSelect = (token: TokenInfo): void => {
     setSelectedToken(token);
     setCurrentStep(STEPS.REVIEW);
   };
 
-  const handleExecutePayout = async (txData) => {
+  const handleExecutePayout = async (txData: TransactionData): Promise<void> => {
     setTransactionData(txData);
     setCurrentStep(STEPS.EXECUTE);
   };
 
-  const handlePayoutComplete = (results) => {
+  const handlePayoutComplete = (results: PayoutResult[]): void => {
     setPayoutResults(results);
     setCurrentStep(STEPS.COMPLETE);
   };
 
-  const handleStartOver = () => {
+  const handleStartOver = (): void => {
     setCurrentStep(STEPS.UPLOAD);
     setRecipients([]);
     setSelectedToken(null);
@@ -57,7 +89,7 @@ function App() {
     setPayoutResults([]);
   };
 
-  const getStepNumber = (step) => {
+  const getStepNumber = (step: StepType): number => {
     const steps = Object.values(STEPS);
     return steps.indexOf(step) + 1;
   };
@@ -140,9 +172,9 @@ function App() {
                 </span>
               </div>
               <div className="flex items-center space-x-4">
-                {Object.values(STEPS).map((step, index) => {
-                  const isActive = step === currentStep;
-                  const isCompleted = getStepNumber(currentStep) > index + 1;
+                {Object.values(STEPS).map((step: StepType, index: number) => {
+                  const isActive: boolean = step === currentStep;
+                  const isCompleted: boolean = getStepNumber(currentStep) > index + 1;
                   return (
                     <div key={step} className="flex items-center">
                       <div
