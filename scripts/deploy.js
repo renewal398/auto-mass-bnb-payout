@@ -1,10 +1,22 @@
-const { ethers } = require("hardhat");
+import { ethers } from "hardhat";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { Contract, ContractFactory } from "ethers";
+import * as fs from "fs";
 
-async function main() {
+interface DeploymentInfo {
+  network: string;
+  contractAddress: string;
+  feeCollector: string;
+  deployer: string;
+  transactionHash: string;
+  timestamp: string;
+}
+
+async function main(): Promise<void> {
   console.log("Starting deployment...");
 
   // Get the ContractFactory and Signers
-  const [deployer] = await ethers.getSigners();
+  const [deployer]: SignerWithAddress[] = await ethers.getSigners();
   console.log("Deploying contracts with account:", deployer.address);
 
   // Check account balance
@@ -12,13 +24,13 @@ async function main() {
   console.log("Account balance:", ethers.utils.formatEther(balance), "BNB");
 
   // Deploy the contract
-  const MassPayouts = await ethers.getContractFactory("MassPayouts");
+  const MassPayouts: ContractFactory = await ethers.getContractFactory("MassPayouts");
 
   // Set fee collector to deployer address
-  const feeCollector = deployer.address;
+  const feeCollector: string = deployer.address;
 
   console.log("Deploying MassPayouts contract...");
-  const massPayouts = await MassPayouts.deploy(feeCollector);
+  const massPayouts: Contract = await MassPayouts.deploy(feeCollector);
 
   await massPayouts.deployed();
 
@@ -30,7 +42,7 @@ async function main() {
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
   console.log(`Contract Address: ${massPayouts.address}`);
   console.log(`Fee Collector: ${feeCollector}`);
-  console.log(`Network: ${network.name}`);
+  console.log(`Network: ${(global as any).network.name}`);
   console.log(`Deployer: ${deployer.address}`);
   console.log(`Gas Used: ${massPayouts.deployTransaction.gasLimit}`);
   console.log(`Transaction Hash: ${massPayouts.deployTransaction.hash}`);
@@ -48,9 +60,8 @@ async function main() {
   console.log("3. Test the contract functionality");
 
   // Save deployment info to file
-  const fs = require("fs");
-  const deploymentInfo = {
-    network: network.name,
+  const deploymentInfo: DeploymentInfo = {
+    network: (global as any).network.name,
     contractAddress: massPayouts.address,
     feeCollector: feeCollector,
     deployer: deployer.address,
@@ -59,14 +70,14 @@ async function main() {
   };
 
   fs.writeFileSync(
-    `deployment-${network.name}-${Date.now()}.json`,
+    `deployment-${(global as any).network.name}-${Date.now()}.json`,
     JSON.stringify(deploymentInfo, null, 2)
   );
 }
 
 main()
   .then(() => process.exit(0))
-  .catch((error) => {
+  .catch((error: Error) => {
     console.error("❌ Deployment failed:", error);
     process.exit(1);
   });
