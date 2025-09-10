@@ -4,16 +4,17 @@
   "description": "Auto-Mass Payouts for BNB Chain - Distribute tokens to hundreds of wallets",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "tsc && vite build",
     "preview": "vite preview",
     "compile": "hardhat compile",
-    "deploy:testnet": "hardhat run scripts/deploy.cjs --network bscTestnet",
-    "deploy:mainnet": "hardhat run scripts/deploy.cjs --network bscMainnet",
-    "verify": "hardhat run scripts/verify.cjs",
+    "deploy:testnet": "hardhat run scripts/deploy.ts --network bscTestnet",
+    "deploy:mainnet": "hardhat run scripts/deploy.ts --network bscMainnet",
+    "verify": "hardhat run scripts/verify.ts",
     "test:contract": "hardhat test",
     "test:hardhat": "hardhat test",
-    "setup": "node scripts/setup-env.js",
-    "clean": "hardhat clean && rm -rf dist"
+    "setup": "ts-node scripts/setup-env.ts",
+    "clean": "hardhat clean && rm -rf dist",
+    "type-check": "tsc --noEmit"
   },
   "main": "index.js",
   "keywords": [
@@ -53,6 +54,12 @@
     "solidity-coverage": "^0.8.4",
     "hardhat-contract-sizer": "^2.10.0",
     "dotenv": "^16.3.1",
-    "@openzeppelin/contracts": "^4.9.3"
+    "@openzeppelin/contracts": "^4.9.3",
+    "typescript": "^5.0.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@types/node": "^20.0.0",
+    "@types/papaparse": "^5.3.0",
+    "ts-node": "^10.9.0"
   }
 }
