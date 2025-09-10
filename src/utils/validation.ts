@@ -1,6 +1,18 @@
 import { ethers } from "ethers";
 
-export const validateAddress = (address) => {
+// Type definitions
+export interface RecipientData {
+  address: string;
+  amount: string;
+  originalAmount: string;
+}
+
+export interface ParseResult {
+  results: RecipientData[];
+  errors: string[];
+}
+
+export const validateAddress = (address: string): boolean => {
   try {
     return ethers.utils.isAddress(address);
   } catch {
@@ -8,7 +20,7 @@ export const validateAddress = (address) => {
   }
 };
 
-export const validateAmount = (amount, decimals = 18) => {
+export const validateAmount = (amount: string | number, decimals: number = 18): boolean => {
   try {
     const parsed = ethers.utils.parseUnits(amount.toString(), decimals);
     return parsed.gt(0);
@@ -17,10 +29,10 @@ export const validateAmount = (amount, decimals = 18) => {
   }
 };
 
-export const parseCSVData = (csvText) => {
+export const parseCSVData = (csvText: string): ParseResult => {
   const lines = csvText.trim().split("\n");
-  const results = [];
-  const errors = [];
+  const results: RecipientData[] = [];
+  const errors: string[] = [];
 
   const startIndex = lines[0].toLowerCase().includes("address") ? 1 : 0;
 
@@ -28,7 +40,7 @@ export const parseCSVData = (csvText) => {
     const line = lines[i].trim();
     if (!line) continue;
 
-    const [address, amount] = line.split(",").map((item) => item.trim());
+    const [address, amount] = line.split(",").map((item: string) => item.trim());
 
     if (!address || !amount) {
       errors.push(`Line ${i + 1}: Missing address or amount`);
@@ -55,7 +67,11 @@ export const parseCSVData = (csvText) => {
   return { results, errors };
 };
 
-export const formatTokenAmount = (amount, decimals = 18, symbol = "") => {
+export const formatTokenAmount = (
+  amount: string | number,
+  decimals: number = 18,
+  symbol: string = ""
+): string => {
   try {
     const formatted = ethers.utils.formatUnits(amount, decimals);
     const number = parseFloat(formatted);
@@ -73,7 +89,7 @@ export const formatTokenAmount = (amount, decimals = 18, symbol = "") => {
     if (number >= 1000) return (number / 1000).toFixed(1) + "K";
 
     return number.toString();
-  } catch (error) {
+  } catch (error: unknown) {
     return "0";
   }
 };
