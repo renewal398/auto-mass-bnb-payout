@@ -599,27 +599,56 @@ const TransactionProgress: React.FC<TransactionProgressProps> = ({
               </div>
             </div>
           )}
+{/* Error Display */}
+{error && (
+  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+    <div className="text-sm font-medium text-red-800 mb-2">
+      Transaction Failed
+    </div>
+    <div className="text-sm text-red-700">{error}</div>
+  </div>
+)}
 
-          {/* Error Display */}
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <div className="text-sm font-medium text-red-800 mb-2">
-                Transaction Failed
-              </div>
-              <div className="text-sm text-red-700">{error}</div>
-            </div>
-          )}
+{/* Results Preview */}
+{results.length > 0 && (
+  <div className="border rounded-lg p-4">
+    <div className="text-sm font-medium text-gray-900 mb-3">
+      Results ({results.filter((r) => r.success).length}/
+      {results.length} successful)
+    </div>
+    <div className="max-h-40 overflow-y-auto">
+      <table className="min-w-full text-xs">
+        <thead>
+          <tr className="border-b">
+            <th className="text-left py-1">Address</th>
+            <th className="text-right py-1">Amount</th>
+            <th className="text-center py-1">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {results.slice(0, 10).map((result, index) => (
+            <tr key={index} className="border-b">
+              <td className="py-1 font-mono">
+                {truncateAddress(result.address)}
+              </td>
+              <td className="py-1 text-right">{result.amount}</td>
+              <td className="py-1 text-center">
+                {result.success ? (
+                  <span className="text-green-600">✓</span>
+                ) : (
+                  <span className="text-red-600">✗</span>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+)}
+</CardContent>
+</Card>
+</div>
+};
 
-          {/* Results Preview */}
-          {results.length > 0 && (
-            <div className="border rounded-lg p-4">
-              <div className="text-sm font-medium text-gray-900 mb-3">
-                Results ({results.filter((r) => r.success).length}/
-                {results.length} successful)
-              </div>
-              <div className="max-h-40 overflow-y-auto">
-                <table className="min-w-full text-xs">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-1">Address</th>
-                      <th className="text-r
+export default TransactionProgress;
