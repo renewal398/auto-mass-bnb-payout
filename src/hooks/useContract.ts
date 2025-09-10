@@ -2,20 +2,54 @@ import { useState, useMemo } from "react";
 import { ethers } from "ethers";
 import { CONTRACT_ADDRESSES, CONTRACT_ABI } from "../utils/constants";
 
-export const useContract = (wallet) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+// Type definitions
+interface Wallet {
+  chainId: number;
+  address: string;
+  signer: ethers.Signer;
+  provider: ethers.providers.Provider;
+}
 
-  const contract = useMemo(() => {
+interface TransactionOptions extends ethers.Overrides {
+  gasLimit?: ethers.BigNumberish;
+  gasPrice?: ethers.BigNumberish;
+  value?: ethers.BigNumberish;
+}
+
+interface TransactionResult {
+  tx: ethers.ContractTransaction;
+}
+
+interface UseContractReturn {
+  contract: ethers.Contract | null;
+  isLoading: boolean;
+  error: string | null;
+  executeTransaction: (
+    method: string,
+    params?: any[],
+    options?: TransactionOptions
+  ) => Promise<TransactionResult>;
+  callViewFunction: (method: string, params?: any[]) => Promise<any>;
+}
+
+export const useContract = (wallet: Wallet | null): UseContractReturn => {
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const contract = useMemo((): ethers.Contract | null => {
     if (!wallet || !wallet.signer || !wallet.chainId) return null;
 
-    const contractAddress = CONTRACT_ADDRESSES[wallet.chainId];
+    const contractAddress = CONTRACT_ADDRESSES[wallet.chainId as keyof typeof CONTRACT_ADDRESSES];
     if (!contractAddress) return null;
 
     return new ethers.Contract(contractAddress, CONTRACT_ABI, wallet.signer);
   }, [wallet]);
 
-  const executeTransaction = async (method, params = [], options = {}) => {
+  const executeTransaction = async (
+    method: string,
+    params: any[] = [],
+    options: TransactionOptions = {}
+  ): Promise<TransactionResult> => {
     if (!contract) throw new Error("Contract not available");
 
     setIsLoading(true);
@@ -34,9 +68,9 @@ export const useContract = (wallet) => {
         console.log("No gas limit provided, using default calculation");
         // Use a conservative default based on method
         if (method === "massPayoutBNB") {
-          options.gasLimit = 300000 + (params[0]?.length || 1) * 30000;
+          options.gasLimit = 300000 + ((params[0] as any[])?.length || 1) * 30000;
         } else if (method === "massPayoutToken") {
-          options.gasLimit = 400000 + (params[1]?.length || 1) * 50000;
+          options.gasLimit = 400000 + ((params[1] as any[])?.length || 1) * 50000;
         } else {
           options.gasLimit = 200000;
         }
@@ -45,7 +79,7 @@ export const useContract = (wallet) => {
       // Set a reasonable gas price if not provided
       if (!options.gasPrice) {
         try {
-          const gasPrice = await wallet.signer.getGasPrice();
+          const gasPrice = await wallet!.signer.getGasPrice();
           options.gasPrice = gasPrice.mul(110).div(100); // 10% buffer
         } catch {
           options.gasPrice = ethers.utils.parseUnits("5", "gwei");
@@ -55,18 +89,18 @@ export const useContract = (wallet) => {
       console.log("Final transaction options:", options);
 
       // Execute the transaction directly without gas estimation
-      const tx = await contract[method](...params, options);
+      const tx: ethers.ContractTransaction = await contract[method](...params, options);
 
       console.log("Transaction sent:", tx.hash);
       console.log("Waiting for confirmation...");
 
       setIsLoading(false);
       return { tx };
-    } catch (error) {
+    } catch (error: any) {
       console.error("Transaction failed:", error);
 
       // Parse common error messages
-      let errorMessage = error.message;
+      let errorMessage: string = error.message;
 
       if (error.code === 4001) {
         errorMessage = "Transaction rejected by user";
@@ -85,7 +119,7 @@ export const useContract = (wallet) => {
   };
 
   // Helper method to safely call view functions
-  const callViewFunction = async (method, params = []) => {
+  const callViewFunction = async (method: string, params: any[] = []): Promise<any> => {
     if (!contract) throw new Error("Contract not available");
 
     try {
@@ -93,7 +127,7 @@ export const useContract = (wallet) => {
       const result = await contract[method](...params);
       console.log(`View function ${method} result:`, result);
       return result;
-    } catch (error) {
+    } catch (error: any) {
       console.error(`View function ${method} failed:`, error);
       throw error;
     }
