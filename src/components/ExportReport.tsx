@@ -11,48 +11,96 @@ import { Button } from "./ui/button";
 import { downloadFile, formatDate } from "../utils/helpers";
 import { truncateAddress } from "../utils/helpers";
 
-const ExportReport = ({
+// Types
+interface TokenInfo {
+  address: string;
+  symbol: string;
+  decimals: number;
+  name: string;
+}
+
+interface PayoutResult {
+  address: string;
+  amount: string;
+  success: boolean;
+  transactionHash?: string;
+  blockNumber?: number;
+  error?: string;
+}
+
+interface TransactionData {
+  hash: string;
+  gasUsed?: string;
+  gasPrice?: string;
+  blockNumber?: number;
+  timestamp?: number;
+}
+
+interface ExportReportProps {
+  results: PayoutResult[];
+  selectedToken: TokenInfo;
+  transactionData: TransactionData | null;
+  onStartOver: () => void;
+}
+
+interface SummaryData {
+  timestamp: string;
+  token: TokenInfo;
+  summary: {
+    totalRecipients: number;
+    successfulPayouts: number;
+    failedPayouts: number;
+    totalAmount: number;
+  };
+  results: PayoutResult[];
+}
+
+const ExportReport: React.FC<ExportReportProps> = ({
   results,
   selectedToken,
   transactionData,
   onStartOver,
 }) => {
-  const successfulPayouts = results.filter((r) => r.success);
-  const failedPayouts = results.filter((r) => !r.success);
+  const successfulPayouts: PayoutResult[] = results.filter((r: PayoutResult) => r.success);
+  const failedPayouts: PayoutResult[] = results.filter((r: PayoutResult) => !r.success);
 
-  const exportCSV = () => {
-    const csvHeader = "Address,Amount,Status,Transaction Hash,Block Number\n";
-    const csvData = results
+  const exportCSV = (): void => {
+    const csvHeader: string = "Address,Amount,Status,Transaction Hash,Block Number\n";
+    const csvData: string = results
       .map(
-        (result) =>
+        (result: PayoutResult) =>
           `${result.address},${result.amount},${
             result.success ? "Success" : "Failed"
           },${result.transactionHash || ""},${result.blockNumber || ""}`
       )
       .join("\n");
 
-    const csv = csvHeader + csvData;
-    const filename = `mass-payout-${selectedToken.symbol}-${Date.now()}.csv`;
+    const csv: string = csvHeader + csvData;
+    const filename: string = `mass-payout-${selectedToken.symbol}-${Date.now()}.csv`;
     downloadFile(csv, filename, "text/csv");
   };
 
-  const exportJSON = () => {
-    const data = {
+  const exportJSON = (): void => {
+    const data: SummaryData = {
       timestamp: new Date().toISOString(),
       token: selectedToken,
       summary: {
         totalRecipients: results.length,
         successfulPayouts: successfulPayouts.length,
         failedPayouts: failedPayouts.length,
-        totalAmount: results.reduce((sum, r) => sum + parseFloat(r.amount), 0),
+        totalAmount: results.reduce((sum: number, r: PayoutResult) => sum + parseFloat(r.amount), 0),
       },
       results: results,
     };
 
-    const json = JSON.stringify(data, null, 2);
-    const filename = `mass-payout-${selectedToken.symbol}-${Date.now()}.json`;
+    const json: string = JSON.stringify(data, null, 2);
+    const filename: string = `mass-payout-${selectedToken.symbol}-${Date.now()}.json`;
     downloadFile(json, filename, "application/json");
   };
+
+  const totalAmount: string = results
+    .reduce((sum: number, r: PayoutResult) => sum + parseFloat(r.amount), 0)
+    .toFixed(2);
 
   return (
     <div className="space-y-6">
@@ -91,9 +139,7 @@ const ExportReport = ({
             </div>
             <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 text-center">
               <div className="text-2xl font-bold text-purple-600">
-                {results
-                  .reduce((sum, r) => sum + parseFloat(r.amount), 0)
-                  .toFixed(2)}
+                {totalAmount}
               </div>
               <div className="text-sm text-purple-600">
                 {selectedToken.symbol} Distributed
@@ -159,7 +205,7 @@ const ExportReport = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {results.map((result, index) => (
+                  {results.map((result: PayoutResult, index: number) => (
                     <tr
                       key={index}
                       className={result.success ? "bg-white" : "bg-red-50"}
