@@ -11,28 +11,105 @@ import { Progress } from "./ui/progress";
 import { useContract } from "../hooks/useContract";
 import { truncateAddress } from "../utils/helpers";
 
-const TransactionProgress = ({
+// Type definitions
+interface Token {
+  address: string;
+  symbol: string;
+  name: string;
+  decimals: number;
+  logo: string;
+  isNative: boolean;
+  description?: string;
+}
+
+interface Recipient {
+  address: string;
+  amount: string;
+}
+
+interface Wallet {
+  chainId: number;
+  address: string;
+  signer: ethers.Signer;
+  provider: ethers.providers.Provider;
+}
+
+interface TransactionData {
+  // Add transaction data properties based on your implementation
+  [key: string]: any;
+}
+
+interface PayoutResult {
+  address: string;
+  amount: string;
+  success: boolean;
+  transactionHash: string;
+  blockNumber: number;
+  gasUsed: string;
+}
+
+interface PayoutData {
+  recipient: string;
+  amount: ethers.BigNumber;
+}
+
+interface Fees {
+  serviceFee: ethers.BigNumber | null;
+  totalValue: ethers.BigNumber | null;
+  gasEstimate: ethers.BigNumber | null;
+}
+
+interface TransactionResult {
+  tx: ethers.ContractTransaction;
+}
+
+interface TransactionReceipt {
+  transactionHash: string;
+  blockNumber: number;
+  gasUsed?: ethers.BigNumber;
+  events?: Array<{
+    event?: string;
+    args?: {
+      recipient?: string;
+      success?: boolean;
+      [key: string]: any;
+    };
+  }>;
+}
+
+interface TransactionProgressProps {
+  transactionData: TransactionData;
+  recipients: Recipient[];
+  selectedToken: Token;
+  wallet: Wallet;
+  onComplete?: (results: PayoutResult[]) => void;
+}
+
+type StepStatus = "completed" | "active" | "failed" | "pending";
+type CurrentStep = "preparing" | "executing" | "confirming" | "processing" | "completed" | "failed";
+
+const TransactionProgress: React.FC<TransactionProgressProps> = ({
   transactionData,
   recipients,
   selectedToken,
   wallet,
   onComplete,
 }) => {
-  const [currentStep, setCurrentStep] = useState("preparing");
-  const [progress, setProgress] = useState(0);
-  const [transactionHash, setTransactionHash] = useState("");
-  const [results, setResults] = useState([]);
-  const [error, setError] = useState(null);
-  const [fees, setFees] = useState({
+  const [currentStep, setCurrentStep] = useState<CurrentStep>("preparing");
+  const [progress, setProgress] = useState<number>(0);
+  const [transactionHash, setTransactionHash] = useState<string>("");
+  const [results, setResults] = useState<PayoutResult[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [fees, setFees] = useState<Fees>({
     serviceFee: null,
     totalValue: null,
     gasEstimate: null,
   });
-  const [debugInfo, setDebugInfo] = useState([]);
+  const [debugInfo, setDebugInfo] = useState<string[]>([]);
 
   const { contract, executeTransaction } = useContract(wallet);
 
-  const addDebugInfo = (message) => {
+  const addDebugInfo = (message: string): void => {
     console.log(message);
     setDebugInfo((prev) => [
       ...prev,
@@ -46,7 +123,7 @@ const TransactionProgress = ({
     }
   }, [contract]);
 
-  const calculateFeesAndExecute = async () => {
+  const calculateFeesAndExecute = async (): Promise<void> => {
     try {
       setCurrentStep("preparing");
       setProgress(5);
@@ -70,7 +147,7 @@ const TransactionProgress = ({
       );
 
       // Prepare payout data
-      const payoutData = recipients.map((recipient, index) => {
+      const payoutData: PayoutData[] = recipients.map((recipient, index) => {
         try {
           if (
             !recipient.address ||
@@ -82,7 +159,7 @@ const TransactionProgress = ({
           }
           if (
             !recipient.amount ||
-            isNaN(recipient.amount) ||
+            isNaN(Number(recipient.amount)) ||
             parseFloat(recipient.amount) <= 0
           ) {
             throw new Error(
@@ -97,7 +174,7 @@ const TransactionProgress = ({
               selectedToken.decimals
             ),
           };
-        } catch (err) {
+        } catch (err: any) {
           throw new Error(
             `Error processing recipient ${index + 1}: ${err.message}`
           );
@@ -108,8 +185,8 @@ const TransactionProgress = ({
       setProgress(15);
 
       // Calculate fees based on token type
-      let serviceFee = ethers.constants.Zero;
-      let totalValue = ethers.constants.Zero;
+      let serviceFee: ethers.BigNumber = ethers.constants.Zero;
+      let totalValue: ethers.BigNumber = ethers.constants.Zero;
 
       try {
         if (selectedToken.address === "native") {
@@ -123,7 +200,7 @@ const TransactionProgress = ({
                 totalValue
               )} BNB`
             );
-          } catch (error) {
+          } catch (error: any) {
             addDebugInfo(`calculateBNBTotal failed: ${error.message}`);
             // Fallback calculation: sum of all amounts + estimated fee
             const payoutSum = payoutData.reduce(
@@ -149,7 +226,7 @@ const TransactionProgress = ({
             addDebugInfo(
               `Service fee: ${ethers.utils.formatEther(serviceFee)} BNB`
             );
-          } catch (error) {
+          } catch (error: any) {
             addDebugInfo(`serviceFee() call failed: ${error.message}`);
             // Use a reasonable default fee
             serviceFee = ethers.utils.parseEther("0.001"); // 0.001 BNB default
@@ -163,7 +240,7 @@ const TransactionProgress = ({
           totalValue = serviceFee;
         }
 
-        setFees({ serviceFee, totalValue });
+        setFees({ serviceFee, totalValue, gasEstimate: null });
         addDebugInfo("Fee calculation completed successfully");
         setProgress(25);
 
@@ -190,11 +267,11 @@ const TransactionProgress = ({
 
         // Execute the payout
         await executePayout(payoutData, totalValue);
-      } catch (feeError) {
+      } catch (feeError: any) {
         addDebugInfo(`Fee calculation failed: ${feeError.message}`);
         throw feeError;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Fee calculation and execution failed:", error);
       addDebugInfo(`Error: ${error.message}`);
       setError(error.message);
@@ -202,7 +279,7 @@ const TransactionProgress = ({
     }
   };
 
-  const checkTokenBalanceAndAllowance = async (payoutData) => {
+  const checkTokenBalanceAndAllowance = async (payoutData: PayoutData[]): Promise<void> => {
     try {
       addDebugInfo("Checking token balance and allowance...");
 
@@ -216,7 +293,7 @@ const TransactionProgress = ({
         wallet.signer
       );
 
-      const [balance, allowance] = await Promise.all([
+      const [balance, allowance]: [ethers.BigNumber, ethers.BigNumber] = await Promise.all([
         tokenContract.balanceOf(wallet.address),
         tokenContract.allowance(wallet.address, contract.address),
       ]);
@@ -260,19 +337,19 @@ const TransactionProgress = ({
       }
 
       addDebugInfo("Token balance and allowance check passed");
-    } catch (error) {
+    } catch (error: any) {
       addDebugInfo(`Token check failed: ${error.message}`);
       throw error;
     }
   };
 
-  const executePayout = async (payoutData, totalValue) => {
+  const executePayout = async (payoutData: PayoutData[], totalValue: ethers.BigNumber): Promise<void> => {
     try {
       setCurrentStep("executing");
       setProgress(50);
       addDebugInfo("Executing payout transaction...");
 
-      let txResult;
+      let txResult: TransactionResult;
       if (selectedToken.address === "native") {
         addDebugInfo(
           `Calling massPayoutBNB with value: ${ethers.utils.formatEther(
@@ -310,7 +387,7 @@ const TransactionProgress = ({
 
       // Wait for confirmation
       addDebugInfo("Waiting for transaction confirmation...");
-      const receipt = await txResult.tx.wait();
+      const receipt = await txResult.tx.wait() as TransactionReceipt;
       addDebugInfo(`Transaction confirmed in block ${receipt.blockNumber}`);
 
       setCurrentStep("processing");
@@ -318,17 +395,17 @@ const TransactionProgress = ({
 
       // Process results
       await processResults(receipt);
-    } catch (error) {
+    } catch (error: any) {
       addDebugInfo(`Execution failed: ${error.message}`);
       throw error;
     }
   };
 
-  const processResults = async (receipt) => {
+  const processResults = async (receipt: TransactionReceipt): Promise<void> => {
     try {
       addDebugInfo("Processing payout results...");
 
-      const payoutResults = [];
+      const payoutResults: PayoutResult[] = [];
       const payoutEvents =
         receipt.events?.filter((event) => event.event === "PayoutCompleted") ||
         [];
@@ -345,7 +422,7 @@ const TransactionProgress = ({
         payoutResults.push({
           address: recipient.address,
           amount: recipient.amount,
-          success: event ? event.args.success : false,
+          success: event ? event.args?.success || false : false,
           transactionHash: receipt.transactionHash,
           blockNumber: receipt.blockNumber,
           gasUsed: receipt.gasUsed?.toString() || "0",
@@ -366,14 +443,14 @@ const TransactionProgress = ({
           onComplete(payoutResults);
         }
       }, 2000);
-    } catch (error) {
+    } catch (error: any) {
       addDebugInfo(`Result processing failed: ${error.message}`);
       throw error;
     }
   };
 
-  const getStepStatus = (step) => {
-    const steps = [
+  const getStepStatus = (step: CurrentStep): StepStatus => {
+    const steps: CurrentStep[] = [
       "preparing",
       "executing",
       "confirming",
@@ -389,7 +466,7 @@ const TransactionProgress = ({
     return "pending";
   };
 
-  const getStatusIcon = (status) => {
+  const getStatusIcon = (status: StepStatus): JSX.Element => {
     switch (status) {
       case "completed":
         return (
@@ -454,7 +531,7 @@ const TransactionProgress = ({
                     <div>
                       Plus:{" "}
                       {recipients.reduce(
-                        (sum, r) => sum + parseFloat(r.amount || 0),
+                        (sum, r) => sum + parseFloat(r.amount || "0"),
                         0
                       )}{" "}
                       {selectedToken.symbol}
@@ -545,35 +622,4 @@ const TransactionProgress = ({
                   <thead>
                     <tr className="border-b">
                       <th className="text-left py-1">Address</th>
-                      <th className="text-right py-1">Amount</th>
-                      <th className="text-center py-1">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {results.slice(0, 10).map((result, index) => (
-                      <tr key={index} className="border-b">
-                        <td className="py-1 font-mono">
-                          {truncateAddress(result.address)}
-                        </td>
-                        <td className="py-1 text-right">{result.amount}</td>
-                        <td className="py-1 text-center">
-                          {result.success ? (
-                            <span className="text-green-600">✓</span>
-                          ) : (
-                            <span className="text-red-600">✗</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
-
-export default TransactionProgress;
+                      <th className="text-r
