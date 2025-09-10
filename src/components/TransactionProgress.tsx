@@ -649,6 +649,8 @@ const TransactionProgress: React.FC<TransactionProgressProps> = ({
 </CardContent>
 </Card>
 </div>
+ );
 };
 
 export default TransactionProgress;
+
