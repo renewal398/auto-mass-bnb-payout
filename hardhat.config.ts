@@ -1,16 +1,19 @@
-require("dotenv").config();
-require("@nomiclabs/hardhat-waffle");
-require("@nomiclabs/hardhat-ethers");
-require("@nomiclabs/hardhat-etherscan");
-require("hardhat-gas-reporter");
-require("solidity-coverage");
+import { config as dotenvConfig } from "dotenv";
+import { HardhatUserConfig } from "hardhat/config";
+import "@nomiclabs/hardhat-waffle";
+import "@nomiclabs/hardhat-ethers";
+import "@nomiclabs/hardhat-etherscan";
+import "hardhat-gas-reporter";
+import "solidity-coverage";
 
-const PRIVATE_KEY = process.env.PRIVATE_KEY;
-const BSCSCAN_API_KEY = process.env.BSCSCAN_API_KEY;
-const TESTNET_RPC_URL =
-  process.env.TESTNET_RPC_URL ||
+dotenvConfig();
+
+const PRIVATE_KEY: string | undefined = process.env.PRIVATE_KEY;
+const BSCSCAN_API_KEY: string | undefined = process.env.BSCSCAN_API_KEY;
+const TESTNET_RPC_URL: string =
+  process.env.TESTNET_RPC_URL || 
   "https://data-seed-prebsc-2-s2.binance.org:8545/";
-const MAINNET_RPC_URL =
+const MAINNET_RPC_URL: string = 
   process.env.MAINNET_RPC_URL || "https://bsc-dataseed1.binance.org/";
 
 if (!PRIVATE_KEY) {
@@ -29,7 +32,7 @@ if (!BSCSCAN_API_KEY) {
  * Hardhat Configuration for BNB Chain Auto-Mass Payouts
  * Compatible with Ethers v5 and older Hardhat plugins
  */
-module.exports = {
+const config: HardhatUserConfig = {
   // Solidity compiler configuration
   solidity: {
     version: "0.8.19",
@@ -143,3 +146,5 @@ console.log("🔧 Hardhat configuration loaded successfully!");
 console.log(`📋 Available networks: hardhat, bscTestnet, bscMainnet`);
 console.log(`🔑 Private key loaded: ${PRIVATE_KEY ? "✅" : "❌"}`);
 console.log(`🔍 BSCScan API key loaded: ${BSCSCAN_API_KEY ? "✅" : "❌"}`);
+
+export default config;
