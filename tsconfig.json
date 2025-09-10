@@ -33,10 +33,7 @@
   },
   "include": [
     "src",
-    "scripts",
-    "hardhat.config.ts",
-    "vite.config.ts",
-    "tailwind.config.ts"
+    "scripts"
   ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
