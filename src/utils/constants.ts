@@ -27,6 +27,7 @@ export interface AbiInput {
   internalType: string;
   name: string;
   type: string;
+  indexed?: boolean;
 }
 
 export interface AbiOutput {
@@ -43,6 +44,7 @@ export interface AbiComponent {
 
 export interface AbiInputWithComponents extends AbiInput {
   components?: AbiComponent[];
+  indexed?: boolean;
 }
 
 export interface AbiFunction {
