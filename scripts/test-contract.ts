@@ -1,7 +1,14 @@
-const { ethers } = require("hardhat");
+import { ethers } from "hardhat";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { Contract, ContractFactory, BigNumber } from "ethers";
 
-async function main() {
-  const contractAddress = process.env.VITE_CONTRACT_ADDRESS_TESTNET;
+interface PayoutData {
+  recipient: string;
+  amount: BigNumber;
+}
+
+async function main(): Promise<void> {
+  const contractAddress: string | undefined = process.env.VITE_CONTRACT_ADDRESS_TESTNET;
 
   if (!contractAddress) {
     console.error(
@@ -12,24 +19,24 @@ async function main() {
 
   console.log("Testing contract functionality...");
 
-  const [signer] = await ethers.getSigners();
-  const MassPayouts = await ethers.getContractFactory("MassPayouts");
-  const contract = MassPayouts.attach(contractAddress);
+  const [signer]: SignerWithAddress[] = await ethers.getSigners();
+  const MassPayouts: ContractFactory = await ethers.getContractFactory("MassPayouts");
+  const contract: Contract = MassPayouts.attach(contractAddress);
 
   try {
     // Test 1: Check service fee
-    const serviceFee = await contract.serviceFee();
+    const serviceFee: BigNumber = await contract.serviceFee();
     console.log(`✅ Service fee: ${ethers.utils.formatEther(serviceFee)} BNB`);
 
     // Test 2: Check contract stats
-    const stats = await contract.getContractStats();
+    const stats: BigNumber[] = await contract.getContractStats();
     console.log(
       `✅ Contract balance: ${ethers.utils.formatEther(stats[0])} BNB`
     );
     console.log(`✅ Fee collector: ${stats[2]}`);
 
     // Test 3: Calculate BNB total for sample data
-    const samplePayouts = [
+    const samplePayouts: PayoutData[] = [
       { recipient: signer.address, amount: ethers.utils.parseEther("0.1") },
       {
         recipient: "0x742dB5c6dB6aD6C6c0e8f4c5c7E8E8E8E8E8E8E8",
@@ -37,20 +44,20 @@ async function main() {
       },
     ];
 
-    const total = await contract.calculateBNBTotal(samplePayouts);
+    const total: BigNumber = await contract.calculateBNBTotal(samplePayouts);
     console.log(
       `✅ Total BNB needed for sample: ${ethers.utils.formatEther(total)} BNB`
     );
 
     console.log("🎉 Contract testing completed successfully!");
-  } catch (error) {
+  } catch (error: any) {
     console.error("❌ Contract testing failed:", error.message);
   }
 }
 
 main()
   .then(() => process.exit(0))
-  .catch((error) => {
+  .catch((error: Error) => {
     console.error(error);
     process.exit(1);
   });
