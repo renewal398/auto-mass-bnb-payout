@@ -1,11 +1,24 @@
-export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+import { ethers } from 'ethers';
 
-export const truncateAddress = (address, start = 6, end = 4) => {
+// Type definitions
+export interface Provider {
+  getGasPrice(): Promise<ethers.BigNumber>;
+}
+
+// Helper functions
+export const sleep = (ms: number): Promise<void> => 
+  new Promise((resolve) => setTimeout(resolve, ms));
+
+export const truncateAddress = (
+  address: string | null | undefined, 
+  start: number = 6, 
+  end: number = 4
+): string => {
   if (!address) return "";
   return `${address.slice(0, start)}...${address.slice(-end)}`;
 };
 
-export const copyToClipboard = async (text) => {
+export const copyToClipboard = async (text: string): Promise<boolean> => {
   try {
     await navigator.clipboard.writeText(text);
     return true;
@@ -15,7 +28,11 @@ export const copyToClipboard = async (text) => {
   }
 };
 
-export const downloadFile = (data, filename, type = "text/plain") => {
+export const downloadFile = (
+  data: string | Blob, 
+  filename: string, 
+  type: string = "text/plain"
+): void => {
   const blob = new Blob([data], { type });
   const url = window.URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -27,11 +44,13 @@ export const downloadFile = (data, filename, type = "text/plain") => {
   window.URL.revokeObjectURL(url);
 };
 
-export const formatDate = (timestamp) => {
+export const formatDate = (timestamp: number): string => {
   return new Date(timestamp * 1000).toLocaleString();
 };
 
-export const calculateGasPrice = async (provider) => {
+export const calculateGasPrice = async (
+  provider: Provider | ethers.providers.Provider
+): Promise<ethers.BigNumber> => {
   try {
     const gasPrice = await provider.getGasPrice();
     return gasPrice.mul(120).div(100);
