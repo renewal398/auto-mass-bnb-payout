@@ -1,13 +1,46 @@
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 
-export const useWallet = () => {
-  const [wallet, setWallet] = useState(null);
-  const [isConnected, setIsConnected] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+// Type definitions
+interface Wallet {
+  provider: ethers.providers.Web3Provider;
+  signer: ethers.Signer;
+  address: string;
+  chainId: number;
+}
 
-  const connect = async () => {
+interface MetaMaskEthereumProvider {
+  isMetaMask?: boolean;
+  request: (args: { method: string; params?: any[] }) => Promise<any>;
+  on: (event: string, handler: (...args: any[]) => void) => void;
+  removeListener: (event: string, handler: (...args: any[]) => void) => void;
+  selectedAddress: string | null;
+}
+
+interface UseWalletReturn {
+  wallet: Wallet | null;
+  isConnected: boolean;
+  isLoading: boolean;
+  error: string | null;
+  connect: () => Promise<void>;
+  disconnect: () => void;
+  switchToNetwork: (chainId: number) => Promise<void>;
+}
+
+// Extend Window interface to include ethereum
+declare global {
+  interface Window {
+    ethereum?: MetaMaskEthereumProvider;
+  }
+}
+
+export const useWallet = (): UseWalletReturn => {
+  const [wallet, setWallet] = useState<Wallet | null>(null);
+  const [isConnected, setIsConnected] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const connect = async (): Promise<void> => {
     setIsLoading(true);
     setError(null);
 
@@ -36,7 +69,7 @@ export const useWallet = () => {
             method: "wallet_switchEthereumChain",
             params: [{ chainId: "0x61" }], // BSC Testnet
           });
-        } catch (switchError) {
+        } catch (switchError: any) {
           // If BSC Testnet is not added, add it
           if (switchError.code === 4902) {
             await window.ethereum.request({
@@ -82,7 +115,7 @@ export const useWallet = () => {
       // Listen for account changes
       window.ethereum.on("accountsChanged", handleAccountsChanged);
       window.ethereum.on("chainChanged", handleChainChanged);
-    } catch (error) {
+    } catch (error: any) {
       setError(error.message);
       console.error("Wallet connection failed:", error);
     } finally {
@@ -90,7 +123,7 @@ export const useWallet = () => {
     }
   };
 
-  const disconnect = () => {
+  const disconnect = (): void => {
     // Remove event listeners
     if (window.ethereum) {
       window.ethereum.removeListener("accountsChanged", handleAccountsChanged);
@@ -102,7 +135,7 @@ export const useWallet = () => {
     setError(null);
   };
 
-  const handleAccountsChanged = (accounts) => {
+  const handleAccountsChanged = (accounts: string[]): void => {
     if (accounts.length === 0) {
       disconnect();
     } else {
@@ -111,12 +144,12 @@ export const useWallet = () => {
     }
   };
 
-  const handleChainChanged = (chainId) => {
+  const handleChainChanged = (chainId: string): void => {
     // Reload the page when chain changes
     window.location.reload();
   };
 
-  const switchToNetwork = async (chainId) => {
+  const switchToNetwork = async (chainId: number): Promise<void> => {
     if (!window.ethereum) return;
 
     try {
@@ -125,7 +158,7 @@ export const useWallet = () => {
         method: "wallet_switchEthereumChain",
         params: [{ chainId: hexChainId }],
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to switch network:", error);
       throw error;
     }
@@ -133,7 +166,7 @@ export const useWallet = () => {
 
   // Auto-connect on page refresh if previously connected
   useEffect(() => {
-    const autoConnect = async () => {
+    const autoConnect = async (): Promise<void> => {
       if (window.ethereum && window.ethereum.selectedAddress) {
         try {
           await connect();
