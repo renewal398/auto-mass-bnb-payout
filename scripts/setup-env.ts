@@ -1,9 +1,9 @@
-const fs = require("fs");
-const path = require("path");
+import * as fs from "fs";
+import * as path from "path";
 
 // Create .env file if it doesn't exist
-const envPath = path.join(__dirname, "..", ".env");
-const envExamplePath = path.join(__dirname, "..", ".env.example");
+const envPath: string = path.join(__dirname, "..", ".env");
+const envExamplePath: string = path.join(__dirname, "..", ".env.example");
 
 if (!fs.existsSync(envPath) && fs.existsSync(envExamplePath)) {
   fs.copyFileSync(envExamplePath, envPath);
@@ -16,7 +16,7 @@ if (!fs.existsSync(envPath) && fs.existsSync(envExamplePath)) {
 }
 
 // Create contracts directory for ABI files
-const contractsDir = path.join(__dirname, "..", "src", "contracts");
+const contractsDir: string = path.join(__dirname, "..", "src", "contracts");
 if (!fs.existsSync(contractsDir)) {
   fs.mkdirSync(contractsDir, { recursive: true });
   console.log("✅ Created contracts directory");
